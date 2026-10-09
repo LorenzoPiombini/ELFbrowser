@@ -14,7 +14,7 @@ you can acctually target any section in the program, in the funciton `browse_hea
 
 ## How to test it 
 
-you have to source C files in this repo. you can build your target from hello.c:
+you have two source C files in this repo. you can build your target from hello.c:
 ```
 gcc hello.c -o CIAO_pie
 ```
@@ -34,7 +34,7 @@ now your `./CIAO_pie` is injected with the reboot instruction, and if you run it
 
 ## The rust source code
 
-just to experiment, I added the hello world equivalent in rust, once you compiled it with rustc, the executable is not too different from the one generatedfrom C source code, so the injection, works on this executable as well.
+just to experiment, I added the hello world equivalent in rust, once you compiled it with rustc, the executable is larger and different from the one generated from C source code,however is still an ELF file, so the injection, works on this executable as well.
 
 # BE CAREFUL 
 this is a study, aimed to understand how attackers can manipulate programs to take advange of your system.
