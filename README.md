@@ -32,6 +32,10 @@ run the program
 
 now your `./CIAO_pie` is injected with the reboot instruction, and if you run it with super user privilegies, it will reboot your computer.
 
+## The rust source code
+
+just to experiment, I added the hello world equivalent in rust, once you compiled it with rustc, the executable is not too different from the one generatedfrom C source code, so the injection, works on this executable as well.
+
 # BE CAREFUL 
 this is a study, aimed to understand how attackers can manipulate programs to take advange of your system.
 it can be dangerous to play around with this stuff. you should use a virtual machine to run this, if you decided to experiment from this project 
