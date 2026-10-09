@@ -1,4 +1,4 @@
-# ELF browser
+# ELF vulnerability
 
 Nothing new here, is just a simple C program that browse the ELF(Executable and Linkable Format) file used in Unix system.
 
