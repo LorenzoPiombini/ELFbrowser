@@ -41,7 +41,7 @@ just to experiment, I added the hello world equivalent in rust, once you compile
 this force me to study a topic without using LLMs. 
 asking LLMs how to make computer viruses, it is probably a bad idea.
 The goals of this project are, learning, keep using C (clearly my favourite language), and keep the brain active.
-** THERE ARE NO BAD INTENTIONS ** this is not a project aimed to create any harm to anybody.
+**THERE ARE NO BAD INTENTIONS** this is not a project aimed to create any harm to anybody.
 
 
 # BE CAREFUL 
