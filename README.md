@@ -36,6 +36,14 @@ now your `./CIAO_pie` is injected with the reboot instruction, and if you run it
 
 just to experiment, I added the hello world equivalent in rust, once you compiled it with rustc, the executable is larger and different from the one generated from C source code,however is still an ELF file, so the injection, works on this executable as well.
 
+## Why this
+
+this force me to study a topic without using LLMs. 
+asking LLMs how to make computer viruses, it is probably a bad idea.
+The goals of this project are, learning, keep using C (clearly my favourite language), and keep the brain active.
+** THERE ARE NO BAD INTENTIONS ** this is not a project aimed to create any harm to anybody.
+
+
 # BE CAREFUL 
 this is a study, aimed to understand how attackers can manipulate programs to take advange of your system.
 it can be dangerous to play around with this stuff. you should use a virtual machine to run this, if you decided to experiment from this project 
