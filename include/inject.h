@@ -70,6 +70,7 @@ struct Elf_sh_64{
 };
 
 int inject_instruction_silent(char *target,char *instruction,int inst_size);
+int inject_instruction(char *target,char *section_to_inject, char *instruction,int inst_size);
 
 
 
