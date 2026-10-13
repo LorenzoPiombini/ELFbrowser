@@ -15,8 +15,8 @@ the program browses the ELF structure to find the `.text` section where the mach
 you can acctually target any section in the program, you can pass the section you want to target in the host program.
 
 #### `inject_instruction_silent`
-this is an expansion on the previous function, in the previous example the target will now right away that somenthing went wrong.
-the `_silent` funcion is meant to inject the code but the host program will not change is beaviour, at list from an user prospective. 
+this is an expansion on the previous function, in the previous example the target will know right away that somenthing went wrong.
+the `_silent` funcion is meant to inject the code but the host program will not change its beaviour, at list from the user point of view. 
 
 ## How to test it 
 
@@ -46,12 +46,13 @@ just to experiment, I added the hello world equivalent in rust, once you compile
 
 this force me to study a topic without using LLMs. 
 asking LLMs how to make computer viruses, it is probably a bad idea.
-The goals of this project are, learning, keep using C (clearly my favourite language), and keep the brain active.
+The goals of this project are, learning, keep using C (clearly my favourite language), learning new cool stuff like assembly.
 **THERE ARE NO BAD INTENTIONS** this is not a project aimed to create any harm to anybody.
 
 
 # BE CAREFUL 
 this is a study, aimed to understand how attackers can manipulate programs to take advange of your system.
+is an exercise to understand how a computer works.
 it can be dangerous to play around with this stuff. you should use a virtual machine to run this, if you decided to experiment from this project 
 
 
