@@ -7,10 +7,16 @@ this is just a mere study, to understand the vulnerability of a system, and the 
 
 ### What the program does
 
-is simply **inject** an istrunction (reboot) in an executable, and if the user run it, with sudo privileges, than this would reboot your unix system. 
+#### `inject_instruction`
+
+is simply **inject** an istrunction (reboot, in this example) in an executable, and if the user run it, with sudo privileges, than this would reboot your unix system. 
 this is fairly harmles and dangerous at the same time.
-the program browses the ELF structure to find the `.text` section where the machine code instructions seats.
-you can acctually target any section in the program, in the funciton `browse_header()`, you can pass the program that you want to target, and the section that you want to inject your shell code in.
+the program browses the ELF structure to find the `.text` section where the machine code seats.
+you can acctually target any section in the program, you can pass the section you want to target in the host program.
+
+#### `inject_instruction_silent`
+this is an expansion on the previous function, in the previous example the target will now right away that somenthing went wrong.
+the `_silent` funcion is meant to inject the code but the host program will not change is beaviour, at list from an user prospective. 
 
 ## How to test it 
 
