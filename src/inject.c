@@ -8,7 +8,6 @@
 #include <string.h>
 #include "inject.h"
 
-
 static void parse_h(struct Elf_h *header, const uint8_t *file);
 static void parse_ph(struct Elf_ph_64 *ph, const uint8_t *file, int e_size);
 static void parse_sh(struct Elf_sh_64 *sh, const uint8_t *file, int e_size);
@@ -17,8 +16,6 @@ const uint8_t return_lens[] = {7,3,7};
 const char *Return_instructions[] = {"\xb8\x00\x00\x00\x00\x5d\xc3","\x31\xc0\xc3","\xb8\x00\x00\x00\x00\xc9\xc3",NULL};
 const uint8_t padding_lens[] = {12};
 const char *padding_instructions[] = {"\x66\xc7\x45\xfc\x05\x00\x66\xc7\x45\xfe\x04\x00",NULL};
-
-
 
 /*look for .text in the ELF, and 
 finds the first b800000000 instruction from the end of .text (likely a return 0; in a main() function)*/
@@ -56,81 +53,25 @@ int inject_instruction_silent(char *target,char *instruction,int inst_size){
 	struct Elf_ph_64 phs[eh.e_phnum];
 	memset(phs,0,eh.e_phnum*eh.e_phentsize);
 	parse_ph(phs,(const uint8_t*)file + eh.e_phoff, eh.e_phentsize * eh.e_phnum);
-
-	struct Elf_sh_64 shs[eh.e_shnum];
-	memset(shs,0,eh.e_shnum * eh.e_shentsize);
-	parse_sh(shs,(const uint8_t*)file + eh.e_shoff, eh.e_shentsize * eh.e_shnum);
-
-	/* get shared string table*/
-	int sz = shs[eh.e_shstrndx].sh_size;
-	unsigned char strtbl[sz + 1];
-	memset(strtbl,0,sz + 1);
-	memcpy(strtbl,&file[shs[eh.e_shstrndx].sh_offset],sz);
-	
-	/*read section header to understand where to inject the code
-		 look for .text  */
-
-	uint16_t text_data_index = 0;
-	size_t text_seg_name_sz = strlen(TEXT); 
-	for(uint16_t i = 0; i < eh.e_shnum; i++){
-		if(!shs[i].sh_name) continue;
-		if(strlen(&strtbl[shs[i].sh_name]) != text_seg_name_sz) continue;
-		
-		if(strncmp(&strtbl[shs[i].sh_name],TEXT,text_seg_name_sz) == 0){
-			/*.text info */
-			text_data_index = i;
-			break;
-		}
-	}
-
 	
 	/*extract the .text segment from the file buffer*/
-	uint8_t text[shs[text_data_index].sh_size+1];
-	size_t new_text_sz = shs[text_data_index].sh_size + inst_size;
+	uint8_t text[phs[3].p_filesz+1];
+	size_t new_text_sz = phs[3].p_filesz + inst_size;
 	uint8_t NEW_text[new_text_sz + 1];
-	memset(text,0,shs[text_data_index].sh_size+1);
+	memset(text,0,phs[3].p_filesz);
 	memset(NEW_text,0,new_text_sz + 1);
 
-	memcpy(text,&file[shs[text_data_index].sh_offset],shs[text_data_index].sh_size);	
+	memcpy(text,&file[phs[3].p_offset],phs[3].p_filesz);	
 
-	int j = 0;
-	while(Return_instructions[j]){
-		uint64_t start = shs[text_data_index].sh_size - return_lens[j];
-		if(memcmp(&text[start],
-				Return_instructions[j],
-				return_lens[j]) == 0){
-			/*start-1 is where to inject!*/
-			memcpy(NEW_text,text,start);
-			memcpy(&NEW_text[start],instruction,inst_size);
-			start += inst_size;
-			memcpy(&NEW_text[start],Return_instructions[j],return_lens[j]);
-			break;
-		}
-		j++;
-	}
+	/*INJECT*/
+	uint64_t start = phs[3].p_filesz - 1 ;
+	memcpy(NEW_text,text,start);
+	memcpy(&NEW_text[start],instruction,inst_size);
+	start += inst_size;
+	memcpy(&NEW_text[start],&text[phs[3].p_filesz-1],1);
 	
-	shs[text_data_index].sh_size += inst_size;
-	int il = strlen(INIT);
-	int rl = strlen(RODATA);
-	int init_ndx = 0, rodota_ndx = 0;
-	for(uint16_t i = 0; i < eh.e_shnum; i++){
-		if(strncmp(&strtbl[shs[i].sh_name],INIT,il) == 0
-			&& il == strlen(&strtbl[shs[i].sh_name])){
-			init_ndx = i;
-		}
-
-		if(strncmp(&strtbl[shs[i].sh_name],RODATA,rl) == 0
-			&& rl == strlen(&strtbl[shs[i].sh_name])){
-			rodota_ndx = i;
-		}
-	}
-
-	for(uint16_t j = 0; j < eh.e_phnum; j++){
-		if(phs[j].p_offset == shs[init_ndx].sh_offset){	
-			phs[j].p_filesz = shs[text_data_index].sh_size;
-			break;
-		}  
-	}
+	phs[3].p_filesz += inst_size;
+	phs[3].p_memsz += inst_size;
 
 	unsigned char new_elf[size + 1];
 	memset(new_elf,0,size+ 1);
@@ -142,21 +83,13 @@ int inject_instruction_silent(char *target,char *instruction,int inst_size){
 	memcpy(&new_elf[bwritten],(uint8_t*)&phs,sizeof(phs));
 	bwritten += sizeof(phs);
 	
-	memcpy(&new_elf[bwritten],&file[bwritten],shs[text_data_index].sh_offset - bwritten);
-
-	bwritten = shs[text_data_index].sh_offset;
+	memcpy(&new_elf[bwritten],&file[bwritten],phs[3].p_offset - bwritten);
+	bwritten = phs[3].p_offset;
 	
 	memcpy(&new_elf[bwritten],NEW_text,new_text_sz);
 	bwritten += new_text_sz;
 
-	off_t old_fini = shs[text_data_index+1].sh_offset;
-	shs[text_data_index+1].sh_offset += inst_size;
-	
-	
-	memcpy(&new_elf[bwritten],&file[old_fini],shs[text_data_index+1].sh_size);
-	bwritten = shs[rodota_ndx].sh_offset;
-
-	memcpy(&new_elf[bwritten],&file[shs[rodota_ndx].sh_offset], size - shs[rodota_ndx].sh_offset);
+	memcpy(&new_elf[bwritten],&file[bwritten],size - bwritten);
 	
 	/*write the file*/
 	fd = open(target,O_WRONLY | O_TRUNC,flag);
