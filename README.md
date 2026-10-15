@@ -9,14 +9,15 @@ this is just a mere study, to understand the vulnerability of a system, and the 
 
 #### `inject_instruction`
 
-is simply **inject** an istrunction (reboot, in this example) in an executable, and if the user run it, with sudo privileges, than this would reboot your unix system. 
-this is fairly harmles and dangerous at the same time.
-the program browses the ELF structure to find the `.text` section where the machine code seats.
-you can acctually target any section in the program, you can pass the section you want to target in the host program.
+simply **injects** an istrunction inside an executable, you can choose one of the shellcode in include/bin.h.
+if you use this function, you can acctually target any section in the program,pass the section you want to target in the host program as an agument.
+this rudimental funtion works with all the ELF file, regardles the source code that the ELF was generated from. 
 
 #### `inject_instruction_silent`
 this is an expansion on the previous function, in the previous example the target will know right away that somenthing went wrong.
 the `_silent` funcion is meant to inject the code but the host program will not change its beaviour, at list from the user point of view. 
+it is also smarter because does not need Section header, if the host strip the section header form the ELF file, they still won't be safe. 
+here we target the `.fini` section which is present at the end of `.text` in all executable made with a compiler,(at least so far, I've found that to be true)
 
 ## How to test it 
 
