@@ -12,6 +12,9 @@ static void parse_h(struct Elf_h *header, const uint8_t *file);
 static void parse_ph(struct Elf_ph_64 *ph, const uint8_t *file, int e_size);
 static void parse_sh(struct Elf_sh_64 *sh, const uint8_t *file, int e_size);
 
+const char *rust_pad[] = {"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"};
+const char fini[] = "\xf3\x0f\x1e\xfa\x48\x83\xec\x08\x48\x83\xc4\x08\xc3";
+
 const uint8_t return_lens[] = {7,3,7};
 const char *Return_instructions[] = {"\xb8\x00\x00\x00\x00\x5d\xc3","\x31\xc0\xc3","\xb8\x00\x00\x00\x00\xc9\xc3",NULL};
 const uint8_t padding_lens[] = {12};
@@ -55,23 +58,34 @@ int inject_instruction_silent(char *target,char *instruction,int inst_size){
 	parse_ph(phs,(const uint8_t*)file + eh.e_phoff, eh.e_phentsize * eh.e_phnum);
 	
 	/*extract the .text segment from the file buffer*/
-	uint8_t text[phs[3].p_filesz+1];
-	size_t new_text_sz = phs[3].p_filesz + inst_size;
+	int i  = 0;
+	for(i = 0; i < eh.e_phnum; i++)
+		if(phs[i].p_type == PT_LOAD && phs[i].p_flag == PF_RX) break; 
+
+	uint8_t text[phs[i].p_filesz+1];
+	size_t new_text_sz = phs[i].p_filesz + inst_size;
 	uint8_t NEW_text[new_text_sz + 1];
-	memset(text,0,phs[3].p_filesz);
+	memset(text,0,phs[i].p_filesz);
 	memset(NEW_text,0,new_text_sz + 1);
 
-	memcpy(text,&file[phs[3].p_offset],phs[3].p_filesz);	
+	memcpy(text,&file[phs[i].p_offset],phs[i].p_filesz);	
 
 	/*INJECT*/
-	uint64_t start = phs[3].p_filesz - 1 ;
+	if(memcmp(&text[phs[i].p_filesz -64],
+		fini,
+		sizeof(fini)-1) == 0){
+		printf("this require special care");
+		return 0;
+	} 
+
+	uint64_t start = phs[i].p_filesz - 1 ;
 	memcpy(NEW_text,text,start);
 	memcpy(&NEW_text[start],instruction,inst_size);
 	start += inst_size;
-	memcpy(&NEW_text[start],&text[phs[3].p_filesz-1],1);
+	memcpy(&NEW_text[start],&text[phs[i].p_filesz-1],1);
 	
-	phs[3].p_filesz += inst_size;
-	phs[3].p_memsz += inst_size;
+	phs[i].p_filesz += inst_size;
+	phs[i].p_memsz += inst_size;
 
 	unsigned char new_elf[size + 1];
 	memset(new_elf,0,size+ 1);
@@ -83,8 +97,8 @@ int inject_instruction_silent(char *target,char *instruction,int inst_size){
 	memcpy(&new_elf[bwritten],(uint8_t*)&phs,sizeof(phs));
 	bwritten += sizeof(phs);
 	
-	memcpy(&new_elf[bwritten],&file[bwritten],phs[3].p_offset - bwritten);
-	bwritten = phs[3].p_offset;
+	memcpy(&new_elf[bwritten],&file[bwritten],phs[i].p_offset - bwritten);
+	bwritten = phs[i].p_offset;
 	
 	memcpy(&new_elf[bwritten],NEW_text,new_text_sz);
 	bwritten += new_text_sz;
