@@ -20,7 +20,7 @@ it is also smarter because does not need Section header, if the host strip the s
 here we target the `.fini` section which is present at the end of `.text` in all executable made with a compiler,(at least so far, I've found that to be true).
 
 ## THE SILENT APPROACH
-the former approach, let's call it the silent approach, opens up a big problem that I discover when targeting an ELF from a rust source code, during the compilation process some references got written in the binary code, and they point to the code that we are trying to inject in the executable, so there is a need to write code that inspect the binary istructions and when we find the code that lands to that offset, we need to overwrite that.  
+the former approach, let's call it the silent approach, opens up a big problem that I discover when targeting an ELF from a rust source code, during the compilation process some references got written in the binary code, and they point to the code that we are trying to inject in the executable, so there is a need to write code that inspect the binary istructions and when we find the code that lands to that offset, we need to overwrite those instruction to pointto our new offset.
 
 ## How to test it 
 
