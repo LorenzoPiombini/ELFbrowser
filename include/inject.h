@@ -1,6 +1,9 @@
 #ifndef __INJECT_H_
 #define __INJECT_H_
 
+#define PT_LOAD 1
+#define PF_RX 5
+
 #define TEXT 		".text"	
 #define INIT 		".init"	
 #define FINI 		".fini"	
@@ -67,6 +70,15 @@ struct Elf_sh_64{
 	uint32_t	sh_link;
 	uint64_t	sh_addralign;
 	uint64_t	sh_entsize;
+};
+
+struct Rust_adresses{
+	uint32_t addr1;
+	uint32_t addr2;
+	uint32_t addr3;
+	off_t align_rule;
+	off_t exe_start_off;
+	off_t align_instruction_size;
 };
 
 int inject_instruction_silent(char *target,char *instruction,int inst_size);
