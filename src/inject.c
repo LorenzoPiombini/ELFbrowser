@@ -8,6 +8,16 @@
 #include <string.h>
 #include "inject.h"
 
+#define LINUX 0
+#define APPLE 1
+#define WINDOWS 2
+#if defined(__linux__)
+	#define OS LINUX
+#elif defined(__APPLE__)
+	#define OS APPLE
+#elif defined(__APPLE__)
+	#define OS WINDOWS
+#endif
 static void parse_h(struct Elf_h *header, const uint8_t *file);
 static void parse_ph(struct Elf_ph_64 *ph, const uint8_t *file, int e_size);
 static void parse_sh(struct Elf_sh_64 *sh, const uint8_t *file, int e_size);
